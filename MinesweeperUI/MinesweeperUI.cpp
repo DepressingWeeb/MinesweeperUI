@@ -414,7 +414,7 @@ std::tuple < int, int, int > gridSetting() {
 				else if (e.button.x > 300 && e.button.x < 300 + 270 && e.button.y > 250 && e.button.y < 250 + 60) activeField = 2;
 				else if (e.button.x > 300 && e.button.x < 300 + 270 && e.button.y > 450 && e.button.y < 450 + 60) activeField = 3;
 				else activeField = 0;
-				if (e.button.x > 450 && e.button.x < 450 + 150 && e.button.y > 575 && e.button.y < 575 + 50) quit = true;
+				if (e.button.x > 450 && e.button.x < 450 + 150 && e.button.y > 575 && e.button.y < 575 + 50 && text1 != "" && text2 != "" && text3 != "") quit = true;
 			case SDL_KEYDOWN:
 				if (e.key.keysym.sym == SDLK_BACKSPACE) {
 					if (activeField == 1 && text1.size() != 0) text1.pop_back();
