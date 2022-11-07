@@ -57,7 +57,7 @@ SDL_Rect* createRect(SDL_Rect* rect, int x, int y, int w, int h) {
 	return rect;
 }
 
-SDL_Texture* loadImgTexture(std::string path) {
+SDL_Texture* loadImgTexture(string path) {
 	SDL_Texture* newTexture = NULL;
 	newTexture = IMG_LoadTexture(gRenderer, path.c_str());
 	return newTexture;
@@ -482,6 +482,7 @@ void gameLoop() {
 	bool leftMouseDown = false;
 	Uint32 startTime = SDL_GetTicks();
 	Uint32 finalTime = 0;
+	int mouseX, mouseY,row,col;
 	while (!quit) {
 		//Clear Screen and set to last color set in SDL_SetRenderDrawColor()
 		SDL_RenderClear(gRenderer);
@@ -516,6 +517,12 @@ void gameLoop() {
 
 		//Blit texture to screen
 		grid.drawGridContent();
+		SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 255);
+		SDL_GetMouseState(&mouseX, &mouseY);
+		row = std::max(std::min((mouseY - 50) / CELL_SIZE, rows - 1), 0);
+		col = std::max(std::min(mouseX / CELL_SIZE, cols - 1), 0);
+		SDL_RenderDrawRect(gRenderer, &grid.gridCoordinate[row][col]);
+		SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
 		if (grid.checkLose() || grid.checkWin()) {
 			SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 128);
 			SDL_RenderFillRect(gRenderer, &BG);
