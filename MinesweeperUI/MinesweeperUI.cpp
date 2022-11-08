@@ -220,6 +220,16 @@ public:
 					if (gridContent[i][j] == -1) visible[i][j] = true;
 				}
 			}
+			drawGridContent();
+			SDL_RenderPresent(gRenderer);
+			SDL_Texture* bombExplode = NULL;
+			SDL_Rect rect;
+			for (int i = 0; i <= 16; i++) {
+				bombExplode = loadImgTexture("resources/BombExplode/explode-" + std::to_string(i) + ".png");
+				SDL_RenderCopy(gRenderer, bombExplode, NULL, &gridCoordinate[row][col]);
+				SDL_RenderPresent(gRenderer);
+				SDL_Delay(100);
+			}
 		}
 	}
 
@@ -344,13 +354,32 @@ void filterText(string* text1, string* text2, string* text3, int h, int v) {
 	if (*text3 != "" && *text1 != "" && *text2 != "") *text3 = std::to_string(std::min(stoi(*text3), stoi(*text1) * stoi(*text2) - 1));
 }
 
+void drawDifficulty(string* text1, string* text2, string* text3, TTF_Font* diffFont) {
+	if (*text1 != "" && *text2 != "" && *text3 != "") {
+		int rows = stoi(*text1);
+		int cols = stoi(*text2);
+		int bombNumber = stoi(*text3);
+		float ratio = static_cast<float>(bombNumber) / static_cast<float>(rows * cols);
+		if (ratio >= 0.25) {
+			createText(diffFont, { 255,0,0 }, "HARD", 50, 550, 200, 80);
+		}
+		else if (ratio >= 0.125) {
+			createText(diffFont, { 255,255,0 }, "MEDIUM", 50, 550, 200, 80);
+		}
+		else {
+			createText(diffFont, { 0,255,0 }, "EASY", 50, 550, 200, 80);
+		}
+	}
+}
+
 std::tuple < int, int, int > gridSetting() {
 	TTF_Font* numberFont = TTF_OpenFont("resources/Font/Lato-Light.ttf", 500);
 	TTF_Font* letterFont = TTF_OpenFont("resources/Font/VeganStyle.ttf", 500);
-
+	TTF_Font* diffFont = TTF_OpenFont("resources/Font/ParryHotter.ttf", 500);
 	SDL_Texture* imgTextBox = loadImgTexture("resources/Textbox/txtbox.png");
 	SDL_Texture* imgButtonPlay = loadImgTexture("resources/Large Buttons/Large Buttons/Play.png");
 	SDL_Texture* imgButtonPlayColored = loadImgTexture("resources/Large Buttons/Colored Large Buttons/Play.png");
+	SDL_Texture* bg = loadImgTexture("resources/BG/bg2.jpg");
 
 	bool quit = false;
 	bool leftMouseDown = false;
@@ -369,6 +398,7 @@ std::tuple < int, int, int > gridSetting() {
 	SDL_StartTextInput();
 	while (!quit) {
 		SDL_RenderClear(gRenderer);
+		SDL_RenderCopy(gRenderer, bg, NULL, createRect(&rect, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT));
 		createText(letterFont, { 0 , 0 , 0 }, "Rows", 50, 50, 150, 50);
 		createText(letterFont, { 0 , 0 , 0 }, "Columns", 50, 250, 200, 50);
 		createText(letterFont, { 0 , 0 , 0 }, "Bombs", 50, 450, 200, 50);
@@ -379,6 +409,7 @@ std::tuple < int, int, int > gridSetting() {
 		createText(numberFont, { 0 , 0 , 0 }, text2, (300 + 570 - 20) / 2 - text2.size() * 30 / 2, 255, text2.size() * 30, 50);
 		createText(numberFont, { 0 , 0 , 0 }, text3, (300 + 570 - 20) / 2 - text3.size() * 30 / 2, 455, text3.size() * 30, 50);
 		createButton(imgButtonPlay, imgButtonPlayColored, leftMouseDown, 450, 575, 150, 50, NULL);
+		drawDifficulty(&text1, &text2, &text3, diffFont);
 		if (SDL_GetTicks64() % 1000 >= 500) {
 			switch (activeField) {
 			case 1:
@@ -454,6 +485,7 @@ void gameLoop() {
 		freopen_s(&stream, "save.txt", "r", stdin);
 		std::cin >> rows >> cols >> bombNumber;
 	}
+	cols = std::max(cols, 8);
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(gRenderer);
 	window = SDL_CreateWindow("SDL Tutorial", 100, 100, cols * CELL_SIZE, rows * CELL_SIZE + 100, SDL_WINDOW_SHOWN);
@@ -467,8 +499,10 @@ void gameLoop() {
 	SDL_Texture* quitButtonColored = loadImgTexture("resources/Large Buttons/Colored Large Buttons/Quit.png");
 	SDL_Texture* losePrompt = loadImgTexture("resources/Prompt/lose.png");
 	SDL_Texture* winPrompt = loadImgTexture("resources/Prompt/win2.png");
+	SDL_Texture* bg2 = loadImgTexture("resources/BG/bg2.jpg");
 	SDL_Rect timerBG = { 0 , 0 , cols * CELL_SIZE , 50 };
 	SDL_Rect BG = { 0 , 0 , cols * CELL_SIZE, rows * CELL_SIZE + 50 };
+	SDL_Rect buttonBG = { 0, rows * CELL_SIZE + 50 ,cols * CELL_SIZE ,50 };
 	//SDL_Rect timerBG = { (cols * CELL_SIZE / 2) - 75, 0, 150, 50 };
 
 	Grid grid = Grid(rows, cols, bombNumber);
@@ -489,13 +523,14 @@ void gameLoop() {
 		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
 		SDL_RenderFillRect(gRenderer, &timerBG);
 		SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
-		if (not grid.checkLose()) {
+		if (not grid.checkLose() && not grid.checkWin()) {
 			createText(timerFont, { 0 , 255 , 0 }, getTime(SDL_GetTicks() - startTime), (cols * CELL_SIZE / 2) - 75, 0, 150, 50);
 			finalTime = SDL_GetTicks() - startTime;
 		}
 		else {
 			createText(timerFont, { 0 , 255 , 0 }, getTime(finalTime), (cols * CELL_SIZE / 2) - 75, 0, 150, 50);
 		}
+		SDL_RenderCopy(gRenderer, bg2, &buttonBG, &buttonBG);
 		createButton(newGameButton, newGameButtonColored, leftMouseDown, 0, rows * CELL_SIZE + 50, 100, 50, &newGame);
 		createButton(quitButton, quitButtonColored, leftMouseDown, cols * CELL_SIZE - 100, rows * CELL_SIZE + 50, 100, 50, NULL);
 		leftMouseDown = false;
