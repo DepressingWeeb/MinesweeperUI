@@ -22,6 +22,12 @@
 
 #include <fstream>
 
+#include <deque>
+
+#include <utility>
+
+#include <algorithm>
+
 using std::vector;
 using std::set;
 using std::string;
@@ -30,11 +36,12 @@ using std::string;
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 640;
 const int CELL_SIZE = 25;
-bool isGameLoaded = false;
 
 //init global variables
 SDL_Window* window = NULL;
 SDL_Renderer* gRenderer = NULL;
+bool isGameLoaded = false;
+vector<std::pair<int, int>> toAnimate;
 
 void init() {
 	SDL_Init(SDL_INIT_EVERYTHING);
@@ -164,11 +171,17 @@ public:
 		return gridContent;
 	}
 
-	void drawGridContent() {
+	void drawGridContent(int r = -1, int c = -1, int frames = -1) {
 		int idx = 0;
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < cols; j++) {
+				if (i == r && j == c) continue;
 				if (visible[i][j]) {
+					auto it = std::find(toAnimate.begin(), toAnimate.end(), std::make_pair(i, j));
+					if (r != -1 && it != toAnimate.end() && it - toAnimate.begin() > frames) {
+						SDL_RenderCopy(gRenderer, img_unknown, NULL, &gridCoordinate[i][j]);
+						continue;
+					}
 					if (gridContent[i][j] == -1) idx = 9;
 					else idx = gridContent[i][j];
 				}
@@ -193,6 +206,7 @@ public:
 	}
 
 	void recur(int row, int col) {
+		/*
 		if (checkValid(row, col, rows, cols) == false) {
 			return;
 		}
@@ -229,6 +243,52 @@ public:
 				SDL_RenderCopy(gRenderer, bombExplode, NULL, &gridCoordinate[row][col]);
 				SDL_RenderPresent(gRenderer);
 				SDL_Delay(100);
+			}
+		}*/
+		std::deque <std::pair<int, int>> cells;
+		cells.push_back(std::make_pair(row, col));
+		while (!cells.empty()) {
+			std::tie(row, col) = cells.front();
+			cells.pop_front();
+			if (checkValid(row, col, rows, cols) == false) {
+				continue;
+			}
+			else if (visible[row][col]) {
+				continue;
+			}
+			else if (gridContent[row][col] > 0) {
+				visible[row][col] = true;
+				toAnimate.push_back(std::make_pair(row, col));
+			}
+			else if (gridContent[row][col] == 0) {
+				visible[row][col] = true;
+				toAnimate.push_back(std::make_pair(row, col));
+				cells.push_back(std::make_pair(row - 1, col - 1));
+				cells.push_back(std::make_pair(row - 1, col));
+				cells.push_back(std::make_pair(row - 1, col + 1));
+				cells.push_back(std::make_pair(row, col - 1));
+				cells.push_back(std::make_pair(row, col + 1));
+				cells.push_back(std::make_pair(row + 1, col - 1));
+				cells.push_back(std::make_pair(row + 1, col));
+				cells.push_back(std::make_pair(row + 1, col + 1));
+			}
+			else {
+				lose = true;
+				for (int i = 0; i < rows; i++) {
+					for (int j = 0; j < cols; j++) {
+						if (gridContent[i][j] == -1) visible[i][j] = true;
+					}
+				}
+				drawGridContent();
+				SDL_RenderPresent(gRenderer);
+				SDL_Texture* bombExplode = NULL;
+				SDL_Rect rect;
+				for (int i = 0; i <= 16; i++) {
+					bombExplode = loadImgTexture("resources/BombExplode/explode-" + std::to_string(i) + ".png");
+					SDL_RenderCopy(gRenderer, bombExplode, NULL, &gridCoordinate[row][col]);
+					SDL_RenderPresent(gRenderer);
+					SDL_Delay(100);
+				}
 			}
 		}
 	}
@@ -516,7 +576,8 @@ void gameLoop() {
 	bool leftMouseDown = false;
 	Uint32 startTime = SDL_GetTicks();
 	Uint32 finalTime = 0;
-	int mouseX, mouseY,row,col;
+	int mouseX, mouseY, row, col;
+	int animateTimes = -1;
 	while (!quit) {
 		//Clear Screen and set to last color set in SDL_SetRenderDrawColor()
 		SDL_RenderClear(gRenderer);
@@ -542,23 +603,43 @@ void gameLoop() {
 				break;
 			case SDL_MOUSEBUTTONDOWN:
 				leftMouseDown = true;
+				if (e.button.x > cols * CELL_SIZE - 100 && e.button.x < cols * CELL_SIZE && e.button.y > rows * CELL_SIZE + 50 && e.button.y < rows * CELL_SIZE + 100) quitAndSave(&grid);
+				if (animateTimes != -1) continue;
 				if (not grid.checkLose() && not grid.checkWin()) {
 					grid.handleMouseEvent(&e);
 				}
-				if (e.button.x > cols * CELL_SIZE - 100 && e.button.x < cols * CELL_SIZE && e.button.y > rows * CELL_SIZE + 50 && e.button.y < rows * CELL_SIZE + 100) quitAndSave(&grid);
+				if (toAnimate.size() > 0) animateTimes = 0;
 				break;
 			}
 		}
 
 		//Blit texture to screen
-		grid.drawGridContent();
+		if (animateTimes == -1)	grid.drawGridContent();
+		else {
+			int idx = animateTimes / 2;
+			int r, c;
+			std::tie(r, c) = toAnimate[idx];
+			grid.drawGridContent(r, c, idx);
+			SDL_RenderCopy(gRenderer, grid.arr[grid.gridContent[r][c]], NULL, &grid.gridCoordinate[r][c]);
+			if (animateTimes % 2 == 0) {
+				SDL_Rect coordRect = grid.gridCoordinate[r][c];
+				SDL_Rect fRect = { coordRect.x + 6,coordRect.y + 6,coordRect.w - 6,coordRect.h - 6 };
+				SDL_RenderCopy(gRenderer, grid.img_unknown, NULL, &fRect);
+			}
+			animateTimes++;
+			if (animateTimes == toAnimate.size() * 2) {
+				animateTimes = -1;
+				toAnimate = vector<std::pair<int, int>>();
+			}
+		}
+
 		SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 255);
 		SDL_GetMouseState(&mouseX, &mouseY);
 		row = std::max(std::min((mouseY - 50) / CELL_SIZE, rows - 1), 0);
 		col = std::max(std::min(mouseX / CELL_SIZE, cols - 1), 0);
 		SDL_RenderDrawRect(gRenderer, &grid.gridCoordinate[row][col]);
 		SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
-		if (grid.checkLose() || grid.checkWin()) {
+		if ((grid.checkLose() || grid.checkWin()) && animateTimes == -1) {
 			SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 128);
 			SDL_RenderFillRect(gRenderer, &BG);
 			SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
