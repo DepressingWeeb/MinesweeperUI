@@ -28,9 +28,11 @@
 
 #include <algorithm>
 
-using std::vector;
-using std::set;
-using std::string;
+#include <sstream>
+
+#include <iomanip>
+
+using namespace std;
 
 //Screen dimension constants
 const int SCREEN_WIDTH = 640;
@@ -41,7 +43,7 @@ const int CELL_SIZE = 25;
 SDL_Window* window = NULL;
 SDL_Renderer* gRenderer = NULL;
 bool isGameLoaded = false;
-vector<std::pair<int, int>> toAnimate;
+vector<pair<int, int>> toAnimate;
 
 void init() {
 	SDL_Init(SDL_INIT_EVERYTHING);
@@ -53,7 +55,7 @@ void init() {
 	SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 }
 inline bool isExist(const string& name) {
-	std::ifstream f(name.c_str());
+	ifstream f(name.c_str());
 	return f.good();
 }
 SDL_Rect* createRect(SDL_Rect* rect, int x, int y, int w, int h) {
@@ -136,30 +138,30 @@ public:
 
 	static vector < vector < int >> initGridContent(int rows, int cols, int bomb_number) {
 		vector < vector < int >> gridContent(rows, vector < int >(cols, 0));
-		set < std::pair < int, int >> bombCoordinate;
+		set < pair < int, int >> bombCoordinate;
 		int row, col, intersect;
 		srand(time(0));
 		while (true) {
 			row = rand() % rows;
 			col = rand() % cols;
-			bombCoordinate.insert(std::make_pair(row, col));
+			bombCoordinate.insert(make_pair(row, col));
 			if (bombCoordinate.size() >= bomb_number) break;
 		}
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < cols; j++) {
-				if (bombCoordinate.find(std::make_pair(i, j)) != bombCoordinate.end()) {
+				if (bombCoordinate.find(make_pair(i, j)) != bombCoordinate.end()) {
 					gridContent[i][j] = -1;
 					continue;
 				}
-				set < std::pair < int, int >> adjacent = {
-				   std::make_pair(i - 1, j - 1),
-				   std::make_pair(i - 1, j),
-				   std::make_pair(i - 1, j + 1),
-				   std::make_pair(i, j - 1),
-				   std::make_pair(i, j + 1),
-				   std::make_pair(i + 1, j - 1),
-				   std::make_pair(i + 1, j),
-				   std::make_pair(i + 1, j + 1)
+				set < pair < int, int >> adjacent = {
+				   make_pair(i - 1, j - 1),
+				   make_pair(i - 1, j),
+				   make_pair(i - 1, j + 1),
+				   make_pair(i, j - 1),
+				   make_pair(i, j + 1),
+				   make_pair(i + 1, j - 1),
+				   make_pair(i + 1, j),
+				   make_pair(i + 1, j + 1)
 				};
 				intersect = 0;
 				for (auto p : adjacent) {
@@ -177,7 +179,7 @@ public:
 			for (int j = 0; j < cols; j++) {
 				if (i == r && j == c) continue;
 				if (visible[i][j]) {
-					auto it = std::find(toAnimate.begin(), toAnimate.end(), std::make_pair(i, j));
+					auto it = find(toAnimate.begin(), toAnimate.end(), make_pair(i, j));
 					if (r != -1 && it != toAnimate.end() && it - toAnimate.begin() > frames) {
 						SDL_RenderCopy(gRenderer, img_unknown, NULL, &gridCoordinate[i][j]);
 						continue;
@@ -245,10 +247,10 @@ public:
 				SDL_Delay(100);
 			}
 		}*/
-		std::deque <std::pair<int, int>> cells;
-		cells.push_back(std::make_pair(row, col));
+		deque <pair<int, int>> cells;
+		cells.push_back(make_pair(row, col));
 		while (!cells.empty()) {
-			std::tie(row, col) = cells.front();
+			tie(row, col) = cells.front();
 			cells.pop_front();
 			if (checkValid(row, col, rows, cols) == false) {
 				continue;
@@ -258,19 +260,19 @@ public:
 			}
 			else if (gridContent[row][col] > 0) {
 				visible[row][col] = true;
-				toAnimate.push_back(std::make_pair(row, col));
+				toAnimate.push_back(make_pair(row, col));
 			}
 			else if (gridContent[row][col] == 0) {
 				visible[row][col] = true;
-				toAnimate.push_back(std::make_pair(row, col));
-				cells.push_back(std::make_pair(row - 1, col - 1));
-				cells.push_back(std::make_pair(row - 1, col));
-				cells.push_back(std::make_pair(row - 1, col + 1));
-				cells.push_back(std::make_pair(row, col - 1));
-				cells.push_back(std::make_pair(row, col + 1));
-				cells.push_back(std::make_pair(row + 1, col - 1));
-				cells.push_back(std::make_pair(row + 1, col));
-				cells.push_back(std::make_pair(row + 1, col + 1));
+				toAnimate.push_back(make_pair(row, col));
+				cells.push_back(make_pair(row - 1, col - 1));
+				cells.push_back(make_pair(row - 1, col));
+				cells.push_back(make_pair(row - 1, col + 1));
+				cells.push_back(make_pair(row, col - 1));
+				cells.push_back(make_pair(row, col + 1));
+				cells.push_back(make_pair(row + 1, col - 1));
+				cells.push_back(make_pair(row + 1, col));
+				cells.push_back(make_pair(row + 1, col + 1));
 			}
 			else {
 				lose = true;
@@ -284,7 +286,7 @@ public:
 				SDL_Texture* bombExplode = NULL;
 				SDL_Rect rect;
 				for (int i = 0; i <= 16; i++) {
-					bombExplode = loadImgTexture("resources/BombExplode/explode-" + std::to_string(i) + ".png");
+					bombExplode = loadImgTexture("resources/BombExplode/explode-" + to_string(i) + ".png");
 					SDL_RenderCopy(gRenderer, bombExplode, NULL, &gridCoordinate[row][col]);
 					SDL_RenderPresent(gRenderer);
 					SDL_Delay(100);
@@ -307,54 +309,65 @@ public:
 	}
 };
 void saveGame(Grid* grid) {
-	FILE* stream;
-	freopen_s(&stream, "save.txt", "w", stdout);
-	std::cout << grid->rows << " " << grid->cols << " " << grid->bombNumber << " " << grid->lose << std::endl;
+	ofstream outfile("save.txt");
+	outfile << grid->rows << " " << grid->cols << " " << grid->bombNumber << " " << grid->lose << endl;
 	for (int i = 0; i < grid->rows; i++) {
 		for (int j = 0; j < grid->cols; j++) {
-			std::cout << grid->gridContent[i][j] << " ";
+			outfile << grid->gridContent[i][j] << " ";
 		}
-		std::cout << std::endl;
+		outfile << endl;
 	}
 	for (int i = 0; i < grid->rows; i++) {
 		for (int j = 0; j < grid->cols; j++) {
-			std::cout << grid->visible[i][j] << " ";
+			outfile << grid->visible[i][j] << " ";
 		}
-		std::cout << std::endl;
+		outfile << endl;
 	}
 	for (int i = 0; i < grid->rows; i++) {
 		for (int j = 0; j < grid->cols; j++) {
-			std::cout << grid->flag[i][j] << " ";
+			outfile << grid->flag[i][j] << " ";
 		}
-		std::cout << std::endl;
+		outfile << endl;
 	}
+	outfile.close();
+}
+void saveScore(Uint32 timeInMili, int rows, int cols) {
+	fstream outfile("score.txt", ios::out | ios::app);
+	time_t t = time(0);   // get time now
+	struct tm now;
+	localtime_s(&now, &t);
+	char tnow[80];
+	strftime(tnow, sizeof(tnow), "%Y-%m-%d %X", &now);
+	outfile <<tnow<<" ";
+	outfile << timeInMili << " " << rows << " " << cols << endl;
+	outfile.close();
 }
 
-Grid loadGameSave(int rows, int cols, int bombNumber, FILE* stream) {
+Grid loadGameSave(int rows, int cols, int bombNumber, ifstream& fin) {
 	Grid grid = Grid(rows, cols, bombNumber);
 	int tmp;
-	std::cin >> tmp;
+	fin >> tmp;
 	grid.lose = tmp;
 	for (int i = 0; i < rows; i++) {
 		for (int j = 0; j < cols; j++) {
-			std::cin >> tmp;
+			fin >> tmp;
 			grid.gridContent[i][j] = tmp;
 		}
 	}
 	int temp;
 	for (int i = 0; i < rows; i++) {
 		for (int j = 0; j < cols; j++) {
-			std::cin >> temp;
+			fin >> temp;
 			grid.visible[i][j] = temp;
 		}
 	}
 	for (int i = 0; i < rows; i++) {
 		for (int j = 0; j < cols; j++) {
-			std::cin >> temp;
+			fin >> temp;
 			grid.flag[i][j] = temp;
 		}
 	}
-	freopen_s(&stream, "CON", "r", stdin);
+	fin.close();
 	return grid;
 }
 void quitGame() {
@@ -409,9 +422,9 @@ bool isAllDigit(string s) {
 }
 
 void filterText(string* text1, string* text2, string* text3, int h, int v) {
-	if (*text1 != "") *text1 = std::to_string(std::min(stoi(*text1), v / CELL_SIZE));
-	if (*text2 != "") *text2 = std::to_string(std::min(stoi(*text2), h / CELL_SIZE));
-	if (*text3 != "" && *text1 != "" && *text2 != "") *text3 = std::to_string(std::min(stoi(*text3), stoi(*text1) * stoi(*text2) - 1));
+	if (*text1 != "") *text1 = to_string(min(stoi(*text1), v / CELL_SIZE));
+	if (*text2 != "") *text2 = to_string(min(stoi(*text2), h / CELL_SIZE));
+	if (*text3 != "" && *text1 != "" && *text2 != "") *text3 = to_string(min(stoi(*text3), stoi(*text1) * stoi(*text2) - 1));
 }
 
 void drawDifficulty(string* text1, string* text2, string* text3, TTF_Font* diffFont) {
@@ -432,7 +445,7 @@ void drawDifficulty(string* text1, string* text2, string* text3, TTF_Font* diffF
 	}
 }
 
-std::tuple < int, int, int > gridSetting() {
+tuple < int, int, int > gridSetting() {
 	TTF_Font* numberFont = TTF_OpenFont("resources/Font/Lato-Light.ttf", 500);
 	TTF_Font* letterFont = TTF_OpenFont("resources/Font/VeganStyle.ttf", 500);
 	TTF_Font* diffFont = TTF_OpenFont("resources/Font/ParryHotter.ttf", 500);
@@ -450,7 +463,6 @@ std::tuple < int, int, int > gridSetting() {
 
 	int horizontal = GetSystemMetrics(SM_CXSCREEN) - 100;
 	int vertical = GetSystemMetrics(SM_CYSCREEN) - 200;
-	//std::cout << horizontal << " " << vertical;
 
 	SDL_Rect rect;
 	SDL_Event e;
@@ -517,13 +529,13 @@ std::tuple < int, int, int > gridSetting() {
 		SDL_RenderPresent(gRenderer);
 	}
 	SDL_StopTextInput();
-	return std::make_tuple(std::stoi(text1), std::stoi(text2), std::stoi(text3));
+	return make_tuple(stoi(text1), stoi(text2), stoi(text3));
 }
 
 string getTime(Uint32 timeInMili) {
 	int totalSeconds = timeInMili / 1000;
-	string minutes = std::to_string(totalSeconds / 60);
-	string seconds = std::to_string(totalSeconds % 60);
+	string minutes = to_string(totalSeconds / 60);
+	string seconds = to_string(totalSeconds % 60);
 	if (minutes.size() == 1) minutes = "0" + minutes;
 	if (seconds.size() == 1) seconds = "0" + seconds;
 	return minutes + ":" + seconds;
@@ -532,20 +544,17 @@ void startMenu();
 void newGame() {
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(gRenderer);
-	window = SDL_CreateWindow("SDL Tutorial", 100, 100, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-	gRenderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 	startMenu();
 }
 void gameLoop() {
-	FILE* stream = NULL;
+	ifstream fin;
 	int rows, cols, bombNumber;
-	if (not isGameLoaded) std::tie(rows, cols, bombNumber) = gridSetting();
+	if (not isGameLoaded) tie(rows, cols, bombNumber) = gridSetting();
 	else {
-		freopen_s(&stream, "save.txt", "r", stdin);
-		std::cin >> rows >> cols >> bombNumber;
+		fin.open("save.txt");
+		fin >> rows >> cols >> bombNumber;
 	}
-	cols = std::max(cols, 8);
+	cols = max(cols, 8);
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(gRenderer);
 	window = SDL_CreateWindow("SDL Tutorial", 100, 100, cols * CELL_SIZE, rows * CELL_SIZE + 100, SDL_WINDOW_SHOWN);
@@ -566,10 +575,12 @@ void gameLoop() {
 	//SDL_Rect timerBG = { (cols * CELL_SIZE / 2) - 75, 0, 150, 50 };
 
 	Grid grid = Grid(rows, cols, bombNumber);
+	bool hasSave = false;
 	if (isGameLoaded) {
-		grid = loadGameSave(rows, cols, bombNumber, stream);
+		grid = loadGameSave(rows, cols, bombNumber, fin);
 		isGameLoaded = false;
-	};
+		hasSave = true;
+	}
 	//SDL_SetWindowSize(window, grid.cols * CELL_SIZE, grid.rows * CELL_SIZE);
 	SDL_Event e;
 	bool quit = false;
@@ -618,7 +629,7 @@ void gameLoop() {
 		else {
 			int idx = animateTimes / 2;
 			int r, c;
-			std::tie(r, c) = toAnimate[idx];
+			tie(r, c) = toAnimate[idx];
 			grid.drawGridContent(r, c, idx);
 			SDL_RenderCopy(gRenderer, grid.arr[grid.gridContent[r][c]], NULL, &grid.gridCoordinate[r][c]);
 			if (animateTimes % 2 == 0) {
@@ -629,14 +640,14 @@ void gameLoop() {
 			animateTimes++;
 			if (animateTimes == toAnimate.size() * 2) {
 				animateTimes = -1;
-				toAnimate = vector<std::pair<int, int>>();
+				toAnimate = vector<pair<int, int>>();
 			}
 		}
 
 		SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 255);
 		SDL_GetMouseState(&mouseX, &mouseY);
-		row = std::max(std::min((mouseY - 50) / CELL_SIZE, rows - 1), 0);
-		col = std::max(std::min(mouseX / CELL_SIZE, cols - 1), 0);
+		row = max(min((mouseY - 50) / CELL_SIZE, rows - 1), 0);
+		col = max(min(mouseX / CELL_SIZE, cols - 1), 0);
 		SDL_RenderDrawRect(gRenderer, &grid.gridCoordinate[row][col]);
 		SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
 		if ((grid.checkLose() || grid.checkWin()) && animateTimes == -1) {
@@ -648,6 +659,10 @@ void gameLoop() {
 			}
 			else {
 				SDL_RenderCopy(gRenderer, winPrompt, NULL, &BG);
+				if (!hasSave) {
+					saveScore(SDL_GetTicks() - startTime, rows, cols);
+					hasSave = true;
+				}
 			}
 		}
 		//Update display
@@ -663,7 +678,86 @@ void loadGame() {
 	}
 }
 
+bool cmpScore(tuple<string, string, Uint32, int, int> t1, tuple<string, string, Uint32, int, int> t2) {
+	return get<2>(t1) < get<2>(t2);
+}
+
+vector<tuple<string, string, Uint32, int, int>> sortScore() {
+	vector<tuple<string, string, Uint32, int, int>> ans;
+	string d, t;
+	Uint32 totalTime;
+	int rows, cols;
+	ifstream fin("score.txt");
+	string s;
+	while (getline(fin,s)) {
+		stringstream ss(s);
+		ss >> d >> t >> totalTime >> rows >> cols;
+		ans.push_back(make_tuple(d, t, totalTime, rows, cols));
+	}
+	fin.close();
+	sort(ans.begin(), ans.end(), cmpScore);
+	return ans;
+
+}
+
+string doubleToString(double d) {
+	ostringstream streamObj;
+	streamObj << fixed << setprecision(2) << d;
+	string strObj = streamObj.str();
+	return strObj;
+}
+
+void Leaderboard() {
+	SDL_DestroyWindow(window);
+	SDL_DestroyRenderer(gRenderer);
+	window = SDL_CreateWindow("Leaderboard", 100, 100, 1000,615, SDL_WINDOW_SHOWN);
+	gRenderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	SDL_SetRenderDrawBlendMode(gRenderer, SDL_BLENDMODE_BLEND);
+	SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+	SDL_Rect rect;
+	TTF_Font* boardFont = TTF_OpenFont("resources/Font/Lato-Light.ttf", 500);
+	SDL_Texture* leaderboard = loadImgTexture("resources/Leaderboard/leaderboard.png");
+	SDL_Texture* quitButton = loadImgTexture("resources/Large Buttons/Large Buttons/Quit.png");
+	SDL_Texture* quitButtonColored = loadImgTexture("resources/Large Buttons/Colored Large Buttons/Quit.png");
+	SDL_Texture* backButton = loadImgTexture("resources/Large Buttons/Large Buttons/Back.png");
+	SDL_Texture* backButtonColored = loadImgTexture("resources/Large Buttons/Colored Large Buttons/Back.png");
+	vector<tuple<string, string, Uint32, int, int>> sortedScore = sortScore();
+	SDL_RenderClear(gRenderer);
+	SDL_RenderCopy(gRenderer, leaderboard, NULL, createRect(&rect, 0, 0, 1000, 615));
+	int lim = sortedScore.size() > 6 ? 6 : sortedScore.size();
+	string d, t;
+	Uint32 totalTime;
+	int rows, cols;
+	for (int i = 0; i < lim; i++) {
+		tie(d, t, totalTime, rows, cols) = sortedScore[i];
+		createText(boardFont, { 255,255,255 }, d+" "+t, 175, 230 + 56 * i, 200, 30);
+		createText(boardFont, { 255,255,255 }, getTime(totalTime), 685, 230 + 56 * i, 50, 30);
+		createText(boardFont, { 255,255,255 }, to_string(rows), 430, 230 + 56 * i, 15*to_string(rows).size(), 30);
+		createText(boardFont, { 255,255,255 }, to_string(cols), 550, 230 + 56 * i, 15 * to_string(cols).size(), 30);
+		createText(boardFont, { 255,255,255 }, doubleToString(static_cast<double>(rows*cols)/static_cast<double>(totalTime/1000)), 815, 230 + 56 * i, 50, 30);
+		createText(boardFont, { 255,255,255 }, to_string(sortedScore.size()), 0,0, 30, 30);
+
+	}
+	SDL_RenderPresent(gRenderer);
+	bool leftMouseDown = false;
+	SDL_Event e;
+	bool quit = false;
+	while (!quit) {
+		createButton(backButton, backButtonColored,leftMouseDown,0,560,200,40,&newGame);
+		leftMouseDown = false;
+		while (SDL_PollEvent(&e)) {
+			switch (e.type) {
+			case SDL_QUIT:
+				quitGame();
+			case SDL_MOUSEBUTTONDOWN:
+				leftMouseDown = true;
+			}
+		}
+		SDL_RenderPresent(gRenderer);
+	}
+}
 void startMenu() {
+	init();
 	SDL_Event e;
 	SDL_Texture* bg = loadImgTexture("resources/BG/bg.png");
 	SDL_Texture* startButton = loadImgTexture("resources/Large Buttons/Large Buttons/Start.png");
@@ -672,8 +766,8 @@ void startMenu() {
 	SDL_Texture* exitButtonColored = loadImgTexture("resources/Large Buttons/Colored Large Buttons/Exit.png");
 	SDL_Texture* loadButton = loadImgTexture("resources/Large Buttons/Large Buttons/Load.png");
 	SDL_Texture* loadButtonColored = loadImgTexture("resources/Large Buttons/Colored Large Buttons/Load.png");
-
-	//std::cout << IMG_GetError();
+	SDL_Texture* leaderboard = loadImgTexture("resources/Square Buttons/Square Buttons/leaderboard.png");
+	SDL_Texture* leaderboardColored = loadImgTexture("resources/Square Buttons/Colored Square Buttons/leaderboard.png");
 	SDL_Rect rect;
 	bool quit = false;
 	while (!quit) {
@@ -695,6 +789,7 @@ void startMenu() {
 		createButton(startButton, startButtonColored, leftMouseDown, 350, 325, 200, 50, &gameLoop);
 		createButton(loadButton, loadButtonColored, leftMouseDown, 350, 425, 200, 50, &loadGame);
 		createButton(exitButton, exitButtonColored, leftMouseDown, 350, 525, 200, 50, &quitGame);
+		createButton(leaderboard, leaderboardColored, leftMouseDown, 410, 260, 75, 50, &Leaderboard);
 		//Blit texture to screen
 		//Update display
 		SDL_RenderPresent(gRenderer);
@@ -702,8 +797,8 @@ void startMenu() {
 	return;
 }
 
+
 int main(int argc, char* args[]) {
-	init();
 	startMenu();
 	return 0;
 }
